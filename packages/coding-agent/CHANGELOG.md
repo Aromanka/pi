@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Added
+
+- Added timestamps and monotonic durations to nested tool execution events.
+
 ## [1.0.4] - 2026-10-05
 
 ### New Features

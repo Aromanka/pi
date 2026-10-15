@@ -31,6 +31,26 @@ import type {
 
 export type AgentEventSink = (event: AgentEvent) => Promise<void> | void;
 
+function withToolTiming(emit: AgentEventSink): AgentEventSink {
+	const started = new Map<string, number>();
+	return (event) => {
+		if (event.type === "tool_execution_start") {
+			started.set(event.toolCallId, performance.now());
+			return emit({ ...event, timestamp: Date.now() });
+		}
+		if (event.type === "tool_execution_end") {
+			const start = started.get(event.toolCallId);
+			started.delete(event.toolCallId);
+			return emit({
+				...event,
+				timestamp: Date.now(),
+				...(start === undefined ? {} : { durationMs: performance.now() - start }),
+			});
+		}
+		return emit(event);
+	};
+}
+
 /**
  * Start an agent loop with a new prompt message.
  * The prompt is added to the context and events are emitted for it.
@@ -107,6 +127,7 @@ export async function runAgentLoop(
 	signal: AbortSignal | undefined,
 	streamFn: StreamFn,
 ): Promise<AgentMessage[]> {
+	emit = withToolTiming(emit);
 	const initialMessages = declareToolChanges(context, prompts);
 	const newMessages: AgentMessage[] = [...initialMessages];
 	const currentContext: AgentContext = {
@@ -132,6 +153,7 @@ export async function runAgentLoopContinue(
 	signal: AbortSignal | undefined,
 	streamFn: StreamFn,
 ): Promise<AgentMessage[]> {
+	emit = withToolTiming(emit);
 	if (context.messages.length === 0) {
 		throw new Error("Cannot continue: no messages in context");
 	}

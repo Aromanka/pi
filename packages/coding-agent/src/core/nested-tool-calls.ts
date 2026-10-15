@@ -109,7 +109,14 @@ export interface NestedToolCallOptions {
 
 /** `tool_execution_*` events of nested calls. */
 export type NestedToolExecutionEvent =
-	| { type: "tool_execution_start"; toolCallId: string; toolName: string; args: unknown; parentToolCallId: string }
+	| {
+			type: "tool_execution_start";
+			toolCallId: string;
+			toolName: string;
+			args: unknown;
+			parentToolCallId: string;
+			timestamp: number;
+	  }
 	| {
 			type: "tool_execution_update";
 			toolCallId: string;
@@ -125,6 +132,8 @@ export type NestedToolExecutionEvent =
 			result: AgentToolResult<unknown>;
 			isError: boolean;
 			parentToolCallId: string;
+			timestamp: number;
+			durationMs: number;
 	  };
 
 export interface NestedToolCallHost {
@@ -190,12 +199,14 @@ export class NestedToolCallRunner {
 			arguments: (args ?? {}) as AgentToolCall["arguments"],
 		};
 		const record = scope.recorder.start(toolCall);
+		const started = performance.now();
 		await this.host.emit({
 			type: "tool_execution_start",
 			toolCallId: toolCall.id,
 			toolName: name,
 			args: toolCall.arguments,
 			parentToolCallId: callerId,
+			timestamp: Date.now(),
 		});
 
 		const exclusive =
@@ -243,6 +254,8 @@ export class NestedToolCallRunner {
 			result: outcome.result,
 			isError: outcome.isError,
 			parentToolCallId: callerId,
+			timestamp: Date.now(),
+			durationMs: performance.now() - started,
 		});
 		return outcome;
 	}

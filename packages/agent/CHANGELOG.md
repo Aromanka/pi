@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Added
+
+- Added wall-clock timestamps and monotonic durations to tool execution events.
+
 ## [1.0.4] - 2026-10-05
 
 ## [1.0.3] - 2026-10-05
